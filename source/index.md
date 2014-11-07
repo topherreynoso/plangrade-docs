@@ -1,5 +1,5 @@
 ---
-title: API Reference
+title: plangrade | API Docs
 
 language_tabs:
   - shell
@@ -7,8 +7,8 @@ language_tabs:
   - python
 
 toc_footers:
-  - <a href='#'>Sign Up for a Developer Key</a>
-  - <a href='http://github.com/tripit/slate'>Documentation Powered by Slate</a>
+  - <a href='https://plangrade.com/oauth/applications'>Manage Your Applications</a>
+  - <a href='https://plangrade.com'>&copy; plangrade 2014</a>
 
 includes:
   - errors
@@ -18,151 +18,233 @@ search: true
 
 # Introduction
 
-Welcome to the Kittn API! You can use our API to access Kittn API endpoints, which can get information on various cats, kittens, and breeds in our database.
+## Welcome
 
-We have language bindings in Shell, Ruby, and Python! You can view code examples in the dark area to the right, and you can switch the programming language of the examples with the tabs in the top right.
+> Feel free to use the tabs above to select the code that suits your needs.
 
-This example API documentation page was created with [Slate](http://github.com/tripit/slate). Feel free to edit it and use it as a base for your own API's documentation.
+This is the plangrade API documentation. You can use our API to access plangrade endpoints, allowing clients to retrieve, create, update, and destroy information on companies, plans, participants, compliance documents, and more.
+
+Our API is organized around REST with JSON responses. Our API is designed to use HTTP response codes to indicate API success/errors. We allow you to interact with our API from a client-side web application. 
+
+<aside class="notice">
+JSON will be returned in all responses from the API.
+</aside>
+
+## API v1
+
+Currently this is the only public version.
+
+> You'll find sample code in this pane throughout these docs.
+
+**Base API Endpoint:** `https://plangrade.com/api/v1`
+
+References will be made throughout this version to resources omitting any root urls. For instance, this line:
+
+`https://plangrade.com/api/v1/participants`
+
+will be referenced as:
+
+`/api/v1/participants`
+
+<aside class="success">
+This entire API is *https only*.
+</aside>
 
 # Authentication
 
-> To authorize, use this code:
+> You can provide your Application key and secret when you initialize our libraries.
 
 ```ruby
-require 'kittn'
 
-api = Kittn::APIClient.authorize!('meowmeowmeow')
+# set API keys
+app_id = "blahblahblah"
+secret = "shhhhhh"
+
+# set an OAuth access token
+token = "JRRTolkien"
 ```
 
-```python
-import kittn
+To interact with the API, you will need API keys. [Create a consumer application](https://plangrade.com/oauth/applications) in order to get an Application `key` and `secret`.
 
-api = kittn.authorize('meowmeowmeow')
-```
+Some API endpoints only require your application `key` and `secret` (for instance, [creating a user](#)), but most require an OAuth `access_token`.
 
-```shell
-# With shell, you can just pass the correct header with each request
-curl "api_endpoint_here"
-  -H "Authorization: meowmeowmeow"
-```
+For endpoints that require an OAuth access token, it should be included in the Authorization HTTP header like so:
 
-> Make sure to replace `meowmeowmeow` with your API key.
+`Authorization: Bearer <T0K3N_H3R3>`
 
-Kittn uses API keys to allow access to the API. You can register a new Kittn API key at our [developer portal](http://example.com/developers).
+<aside class="warning">
+Be sure to replace `<T0K3N_H3R3>` with an OAuth `access_token`.
+</aside> 
 
-Kittn expects for the API key to be included in all API requests to the server in a header that looks like the following:
+## OAuth2
 
-`Authorization: meowmeowmeow`
+plangrade's API lets you interact with a user's plangrade account and act on their behalf to view, create, update, and destroy things like companies, plans, and participants. To do so, your application first needs to request authorization from users.
 
-<aside class="notice">
-You must replace `meowmeowmeow` with your personal API key.
-</aside>
+plangrade implements the [OAuth 2.0 standard](http://oauth.net/2/) to facilitate this authorization. Similar to Facebook and Twitter's authentication flow, the user is first presented with a permission dialog for your application, at which point the user can either approve the permissions requested or reject them. Once the user aproves, an `authorization_code` is sent to your application which will then be [exchanged](#finid-authorization) for an `access_token` and a `refresh_token` pair.
 
-# Kittens
+The `access_token` can then be used to make API calls which require user authentication like [Participants](#) or [Companies](#).
 
-## Get All Kittens
+### Token Lifetimes
+
+**Authorization codes** expire *very quickly*: 10 minutes.
+
+**Access tokens** are *short lived*: 2 hours.
+
+**Refresh tokens** are *good forever* (or until revoked by the user).
+
+A refresh token can be used to generate a new `access_token` and `refresh_token` pair. You can [refresh your authorization](#refresh-authorization) to regain active access to a user's account but so long as you store the `refresh_token` you can maintain authorization indefinitely without requiring the user to re-authorize.
+
+## Request Authorization
 
 ```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get
+redirect_uri = "https://www.myredirect.com/redirect"
+client = OAuth2::Client.new(app_id, secret, :site => "https://plangrade.com")
+redirect_to client.auth_code.authorize_url(:redirect_uri => redirect_uri)
 ```
 
-```python
-import kittn
+To start the Oauth process, construct the initiation URL which the user will visit in order to grant permission to your application. It describes the permissions your application requires (which grants read/write access to companies, plans, and participants), and who the client application is (your application's name).
 
-api = kittn.authorize('meowmeowmeow')
-api.kittens.get()
-```
+### URL Format
 
-```shell
-curl "http://example.com/api/kittens"
-  -H "Authorization: meowmeowmeow"
-```
-
-> The above command returns JSON structured like this:
-
-```json
-[
-  {
-    "id": 1,
-    "name": "Fluffums",
-    "breed": "calico",
-    "fluffiness": 6,
-    "cuteness": 7
-  },
-  {
-    "id": 2,
-    "name": "Isis",
-    "breed": "unknown",
-    "fluffiness": 5,
-    "cuteness": 10
-  }
-]
-```
-
-This endpoint retrieves all kittens.
-
-### HTTP Request
-
-`GET http://example.com/kittens`
-
-### Query Parameters
-
-Parameter | Default | Description
---------- | ------- | -----------
-include_cats | false | If set to true, the result will also include cats.
-available | true | If set to false, the result will include kittens that have already been adopted.
-
-<aside class="success">
-Remember — a happy kitten is an authenticated kitten!
-</aside>
-
-## Get a Specific Kitten
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get(2)
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.get(2)
-```
-
-```shell
-curl "http://example.com/api/kittens/3"
-  -H "Authorization: meowmeowmeow"
-```
-
-> The above command returns JSON structured like this:
-
-```json
-{
-  "id": 2,
-  "name": "Isis",
-  "breed": "unknown",
-  "fluffiness": 5,
-  "cuteness": 10
-}
-```
-
-This endpoint retrieves a specific kitten.
-
-<aside class="warning">If you're not using an administrator API key, note that some kittens will return 403 Forbidden if they are hidden for admins only.</aside>
-
-### HTTP Request
-
-`GET http://example.com/kittens/<ID>`
-
-### URL Parameters
+`https://plangrade.com/api/v1/authenticate?client_id={client-id}&response_type=code&redirect_uri={redirect_uri}`
 
 Parameter | Description
 --------- | -----------
-ID | The ID of the cat to retrieve
+client_id | Application key
+response_type | This must always be set to `code`
+redirect_uri | URL where the user will be redirected to afterwards
 
+<aside class="notice">
+Remember to url-encode all querystring parameters.
+</aside>
+
+## Finish Authorization
+
+Once the user returns to your application via the `redirect_uri` you specified, there will be a `code` querystring parameter appended to that URL. Exchange the authorization `code` for an `access_token` and `refresh_token` pair.
+
+### HTTP Request
+
+```ruby
+client = OAuth2::Client.new(app_id, secret, :site => "https://plangrade.com")
+token = client.auth_code.get_token(params[:code], :redirect_uri => redirect_uri)
+```
+
+> Successful Response:
+
+```ruby
+{
+  "access_token": "YLAZSreh165CAD2tPhAEzFCYYIrVyFomLWUDMGFBZIw9KtIg4q",
+  "expires_in": 7200,
+  "refresh_token": "Pgk+l9okjwTCfsvIvEDPrsomE1er1txeyoaAkTIBAuXza8WvZY",
+  "token_type": "bearer"
+}
+```
+
+`POST https://plangrade.com/oauth/v1/token`
+
+Parameter | Description
+--------- | -----------
+client_id | Application key
+client_secret | Application secret
+code | The authorization code included in the redirect URL
+grant_type | This must be se to `authorization_code`
+redirect_uri | The same redirect_uri specified in the initiation step
+
+### Response Parameters
+
+Parameter | Description
+--------- | -----------
+access_token | A new access token with requested scopes
+expires_in | The lifetime of the access token, in seconds. Default is 7200
+refresh_token | New refresh token
+token_type | Always `bearer`
+
+## Refresh Authorization
+
+```ruby
+new_token = token.refresh!
+```
+
+> Successful Response:
+
+```ruby
+{
+  "access_token": "hr1tSJk23tOv9RxR8cQuDpUD/kpUgf0cb9WfKtRoPxTw8ymbVt",
+  "expires_in": 7200,
+  "refresh_token": "lqopeyjq5AJln5fpMedElUULz+XBNNw9nAkIinxE0g4aEzxmDc",
+  "token_type": "bearer"
+}
+```
+
+Use a valid `refresh_token` to generate a new `access_token` and `refresh_token` pair.
+
+### HTTP Request
+
+`POST https://plangrade.com/oauth/v1/token`
+
+Parameter | Description
+--------- | -----------
+client_id | Application key
+client_secret | Application secret
+refresh_token | A valid refresh token
+grant_type | This must be set to `refresh_token`
+
+### Response Parameters
+
+Parameter | Description
+--------- | -----------
+access_token | A new access token with requested scopes
+expires_in | The lifetime of the access token, in seconds. Default is 7200
+refresh_token | New refresh token
+token_type | Always  `bearer`
+
+# Users
+
+## Get Account Info
+
+Retrieve information about the authorized user.
+
+<aside class="notice">
+This endpoint requires an OAuth access token.
+</aside>
+
+### HTTP Request
+
+`GET https://plangrade.com/api/v1/users/{id}`
+
+### Response
+
+Parameter | Description
+--------- | -----------
+id | User's plangrade ID
+name | User's name
+email | User's email address
+companies | The id's for all companies the user is authorized to manage
+
+## Update Account Info
+
+## Create New Account
+
+# Companies
+
+## Get Company Info
+
+## Update Company Info
+
+## Get All User's Companies
+
+## Create New Company
+
+## Delete Company
+
+# Participants
+
+## Get Participant Info
+
+## Update Participant Info
+
+## Get All Company's Participants
+
+## Create New Participant
+
+## Delete Participant

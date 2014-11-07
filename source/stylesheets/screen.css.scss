@@ -488,6 +488,7 @@ html, body {
     margin-bottom: 1.5em;
     background: $aside-notice-bg;
     line-height: 1.6;
+    color: white;
 
     &.warning {
       background-color: $aside-warning-bg;
@@ -525,6 +526,10 @@ html, body {
     border: 1px solid #F7E633;
     text-shadow: 1px 1px 0 #666;
     @include background(linear-gradient(bottom right, #F7E633 0%, #F1D32F 100%));
+  }
+
+  a {
+    color: #ed7100;
   }
 }
 
