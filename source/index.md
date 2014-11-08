@@ -532,7 +532,7 @@ This endpoint requires an OAuth access token.
 
 ### HTTP Request
 
-`POST https://plangrade.com/api/v1/users`
+`POST https://plangrade.com/api/v1/participants`
 
 ## Get Participant Info
 
