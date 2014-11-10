@@ -20,7 +20,7 @@ search: true
 
 ## Welcome
 
-> Feel free to use the tabs above to select the code that suits your needs.
+> Use the tabs above to select the code that suits your needs. A [sample client app](https://github.com/topherreynoso/plangrade-ruby-client) is available in the ruby environment. It demonstrates the authentication flow and accessing the API endpoints.
 
 This is the plangrade API documentation. You can use our API to access plangrade endpoints, allowing clients to retrieve, create, update, and destroy information on companies, plans, participants, compliance documents, and more.
 
@@ -38,30 +38,20 @@ Currently this is the only public version.
 
 **Base API Endpoint:** `https://plangrade.com/api/v1`
 
-References will be made throughout this version to resources omitting any root urls. For instance, this line:
-
-`https://plangrade.com/api/v1/participants`
-
-will be referenced as:
-
-`/api/v1/participants`
-
 <aside class="success">
 This entire API is *https only*.
 </aside>
 
 # Authentication
 
-> You can provide your Application key and secret when you initialize our libraries.
+> There is a gem available to facilitate authentication in a ruby environment: [omniauth-plangrade](https://github.com/topherreynoso/omniauth-plangrade). Please refer to the gem's documentation for full instructions.
+
+> Provide your Application key and secret as the following variables when you initialize your app.
 
 ```ruby
-
 # set API keys
-app_id = "blahblahblah"
-secret = "shhhhhh"
-
-# set an OAuth access token
-token = "JRRTolkien"
+ENV['PLANGRADE_CLIENT_ID'] = "jhsafdiurwe989734kjo3485uihw5io"
+ENV['PLANGRADE_CLIENT_SECRET'] = "uysadsir5wt6837i9kjo3485u46swfd"
 ```
 
 To interact with the API, you will need API keys. [Create a consumer application](https://plangrade.com/oauth/applications) in order to get an Application `key` and `secret`.
@@ -77,6 +67,21 @@ Be sure to replace `<T0K3N_H3R3>` with an OAuth `access_token`.
 </aside> 
 
 ## OAuth2
+
+> Set up your application to properly support callback routes.
+
+```ruby
+# For omniauth-plangrade users, here's an example
+# Add this to your config/routes.rb
+get   '/auth/:provider/callback' => 'static_pages#redirect'
+
+# Add this to config/initializers/omniauth.rb
+Rails.application.config.middleware.use OmniAuth::Builder do
+  provider :plangrade, ENV['PLANGRADE_CLIENT_ID'], ENV['PLANGRADE_CLIENT_SECRET']
+end
+```
+
+> Now just make sure that your [plangrade client application](https://plangrade.com/oauth/applications) has the proper Redirect uri specified (e.g. https://mysite.com/auth/plangrade/callback)
 
 plangrade's API lets you interact with a user's plangrade account and act on their behalf to view, create, update, and destroy things like companies, plans, and participants. To do so, your application first needs to request authorization from users.
 
@@ -96,13 +101,23 @@ A refresh token can be used to generate a new `access_token` and `refresh_token`
 
 ## Request Authorization
 
+> Request authorization with a properly generated link
+
 ```ruby
+# For omniauth-plangrade users, this is trivial
+# Add a link or button to start the authentication
+link_to "Authorize", "/auth/plangrade"
+
+# As an alternative, use OAuth2
 redirect_uri = "https://www.myredirect.com/redirect"
 client = OAuth2::Client.new(app_id, secret, :site => "https://plangrade.com")
-redirect_to client.auth_code.authorize_url(:redirect_uri => redirect_uri)
+@auth_path = client.auth_code.authorize_url(:redirect_uri => redirect_uri)
+
+# Then in your corresponding view you can add a link or button
+link_to "Authorize", @auth_path
 ```
 
-To start the Oauth process, construct the initiation URL which the user will visit in order to grant permission to your application. It describes the permissions your application requires (which grants read/write access to companies, plans, and participants), and who the client application is (your application's name).
+To start the OAuth process, construct the initiation URL which the user will visit in order to grant permission to your application. It describes the permissions your application requires (which grants read/write access to companies, plans, and participants), and who the client application is (your application's name).
 
 ### URL Format
 
@@ -120,25 +135,22 @@ Remember to url-encode all querystring parameters.
 
 ## Finish Authorization
 
-Once the user returns to your application via the `redirect_uri` you specified, there will be a `code` querystring parameter appended to that URL. Exchange the authorization `code` for an `access_token` and `refresh_token` pair.
-
-### HTTP Request
+> Once authorized, you need to obtain your `access_token` and `refresh_token` pair.
 
 ```ruby
-client = OAuth2::Client.new(app_id, secret, :site => "https://plangrade.com")
+# For omniauth-plangrade, just interpret the omniauth response
+auth = request.env["omniauth.auth"]
+token = auth["credentials"]["token"]
+refresh_token = auth["credentials"]["refresh_token"]
+
+# Alternatively, you can use OAuth2
+client = OAuth2::Client.new(ENV['PLANGRADE_CLIENT_ID', 'PLANGRADE_CLIENT_SECRET', :site => "https://plangrade.com")
 token = client.auth_code.get_token(params[:code], :redirect_uri => redirect_uri)
 ```
 
-> Successful Response:
+Once the user returns to your application via the `redirect_uri` you specified, there will be a `code` querystring parameter appended to that URL. Exchange the authorization `code` for an `access_token` and `refresh_token` pair.
 
-```ruby
-{
-  "access_token": "YLAZSreh165CAD2tPhAEzFCYYIrVyFomLWUDMGFBZIw9KtIg4q",
-  "expires_in": 7200,
-  "refresh_token": "Pgk+l9okjwTCfsvIvEDPrsomE1er1txeyoaAkTIBAuXza8WvZY",
-  "token_type": "bearer"
-}
-```
+### HTTP Request
 
 `POST https://plangrade.com/oauth/v1/token`
 
@@ -161,19 +173,20 @@ token_type | Always `bearer`
 
 ## Refresh Authorization
 
-```ruby
-new_token = token.refresh!
-```
-
-> Successful Response:
+> You can refresh the token in a ruby environment with the second gem available: [plangrade-ruby](https://github.com/topherreynoso/plangrade-ruby). See the plangrade-ruby website for setup instructions.
 
 ```ruby
-{
-  "access_token": "hr1tSJk23tOv9RxR8cQuDpUD/kpUgf0cb9WfKtRoPxTw8ymbVt",
-  "expires_in": 7200,
-  "refresh_token": "lqopeyjq5AJln5fpMedElUULz+XBNNw9nAkIinxE0g4aEzxmDc",
-  "token_type": "bearer"
-}
+# The example below demonstrates using the plangrade-ruby gem
+# Create a plangrade oauth client and refresh the token
+client = Plangrade::OAuth2Client.new(ENV['PLANGRADE_CLIENT_ID'], ENV['PLANGRADE_CLIENT_SECRET'])
+token_pair = JSON.parse client.refresh!(saved_refresh_token).body
+new_token = token_pair["access_token"]
+new_refresh_token = token_pair["refresh_token"]
+
+# Alternatively, if you used the OAuth2 client, call this on your token pair
+new_token_pair = JSON.parse token_pair.refresh!.body
+new_token = token_pair["access_token"]
+new_refresh_token = token_pair["refresh_token"]
 ```
 
 Use a valid `refresh_token` to generate a new `access_token` and `refresh_token` pair.
@@ -200,6 +213,8 @@ token_type | Always  `bearer`
 
 # Users
 
+> In ruby environments, we recommend using the [plangrade-ruby](https://github.com/topherreynoso/plangrade-ruby) gem. See the plangrade-ruby website for setup instructions.
+
 ### Attributes
 
 Parameter | Type | Optional? | Read Only? | Description
@@ -208,14 +223,43 @@ Parameter | Type | Optional? | Read Only? | Description
 `name` | String | No | No | User's name
 `email` | String | No | No | User's email address
 
+## Current User Information
+
+```ruby
+# Retrieve the user's information
+@user = Plangrade.current_user
+```
+
+> If successful, you'll receive either a response similar to this one or a list of errors:
+
+```ruby
+{
+  "id" => 1
+  "name" => "Compliance Man"
+  "email" => "compliance@plangrade.com"
+}
+```
+
+Retrieve the current authorized user's information.
+
+<aside class="notice">
+This endpoint requires an OAuth access token.
+</aside>
+
+### HTTP Request
+
+`GET https://plangrade.com/api/v1/me`
+
+
+
 ## Create New User Account
 
 ```ruby
-# Create a new user account
-token.post('api/v1/users')
+# Create a new user account with `name` and `email`
+new_user = Plangrade.create_user(params)
 ```
 
-> If successful, you'll receive either this response or a list of errors:
+> If successful, you'll receive either a response like this one or a list of errors:
 
 ```ruby
 {
@@ -233,51 +277,20 @@ This endpoint does not require an OAuth access token.
 
 `POST https://plangrade.com/api/v1/users`
 
-## Get User Info
-
-```ruby
-# Fetch account information for the authorized user
-token.get('/api/v1/users/1')
-```
-
-> If successful, you'll receive this response:
-
-```ruby
-{
-  "user" => {
-    "id" => 1
-    "name" => "Test User"
-    "email" => "compliance@plangrade.com"
-  }
-}
-```
-
-Retrieve information about the authorized user.
-
-<aside class="notice">
-This endpoint requires an OAuth access token.
-</aside>
-
-### HTTP Request
-
-`GET https://plangrade.com/api/v1/users/{id}`
-
 ## Update User Account Info
 
 ```ruby
-# Update account information for the authorized user
-token.put('/api/v1/users/1')
+# Update account information (only for the authorized user)
+updated_user = Plangrade.update_user(id, params)
 ```
 
-> If successful, you'll receive either this response or a list of errors:
+> If successful, you'll receive either a response similar to this one or a list of errors:
 
 ```ruby
 {
-  "user" => {
-    "id" => 1
-    "name" => "Test User"
-    "email" => "support@plangrade.com"
-  }
+  "id" => 1
+  "name" => "Compliance Man"
+  "email" => "compliance@plangrade.com"
 }
 ```
 
@@ -294,8 +307,8 @@ This endpoint requires an OAuth access token.
 ## Delete User Account
 
 ```ruby
-# Delete an authorized user's own account
-token.delete('/api/v1/users/1')
+# Delete a user account (authorized user only)
+Plangrade.delete_user(id)
 ```
 
 > If successful, you'll recieve a "204 No Content" response.
@@ -316,6 +329,8 @@ Deleting a user will result in deleting all of its associations with any compani
 
 # Companies
 
+> In ruby environments, we recommend using the [plangrade-ruby](https://github.com/topherreynoso/plangrade-ruby) gem. See the plangrade-ruby website for setup instructions.
+
 ### Attributes
 
 Parameter | Type | Optional? | Read Only? | Description
@@ -329,7 +344,7 @@ Parameter | Type | Optional? | Read Only? | Description
 
 ```ruby
 # Create a new company
-token.post('api/v1/companies')
+company_id = Plangrade.create_company(params)
 ```
 
 > If successful, you'll receive either this response or a list of errors:
@@ -354,19 +369,17 @@ This endpoint requires an OAuth access token.
 
 ```ruby
 # Fetch company information for an authorized user
-token.get('/api/v1/companies/1')
+company = Plangrade.get_company(id)
 ```
 
 > If successful, you'll receive this response:
 
 ```ruby
 {
-  "company" => {
-    "id" => 1
-    "ein" => "123456789"
-    "name" => "plangrade"
-    "grade" => "A+"
-  }
+  "id" => 1
+  "ein" => "123456789"
+  "name" => "plangrade"
+  "grade" => "A+"
 }
 ```
 
@@ -384,33 +397,31 @@ This endpoint requires an OAuth access token.
 
 ```ruby
 # Fetch all companies associated with the authorized user
-token.get('/api/v1/companies')
+companies = Plangrade.all_companies(params)
 ```
 
 > If successful, you'll receive this response:
 
 ```ruby
 {
-  "companies" => [
-    {
-      "id" => 1
-      "ein" => "123456789"
-      "name" => "plangrade"
-      "grade" => "A+"
-    },
-    {
-      "id" => 2
-      "ein" => "123456788"
-      "name" => "plangrade, LLC"
-      "grade" => "A"
-    },
-    {
-      "id" => 3
-      "ein" => "123456787"
-      "name" => "plangrade, Inc."
-      "grade" => "A+"
-    }
-  ]
+  {
+    "id" => 1
+    "ein" => "123456789"
+    "name" => "plangrade"
+    "grade" => "A+"
+  },
+  {
+    "id" => 2
+    "ein" => "123456788"
+    "name" => "plangrade, LLC"
+    "grade" => "A"
+  },
+  {
+    "id" => 3
+    "ein" => "123456787"
+    "name" => "plangrade, Inc."
+    "grade" => "A+"
+  }
 }
 ```
 
@@ -428,19 +439,17 @@ This endpoint requires an OAuth access token.
 
 ```ruby
 # Update company information for an authorized user
-token.put('/api/v1/companies/1')
+updated_company = Plangrade.update_company(id, params)
 ```
 
 > If successful, you'll receive either this response or a list of errors:
 
 ```ruby
 {
-  "company" => {
-    "id" => 1
-    "ein" => "123456789"
-    "name" => "plangrade, LLC"
-    "grade" => "A+"
-  }
+  "id" => 1
+  "ein" => "123456789"
+  "name" => "plangrade, LLC"
+  "grade" => "A+"
 }
 ```
 
@@ -458,7 +467,7 @@ This endpoint requires an OAuth access token.
 
 ```ruby
 # Delete an authorized user's company
-token.delete('/api/v1/companies/1')
+Plangrade.delete_company(id)
 ```
 
 > If successful, you'll recieve a "204 No Content" response.
@@ -474,10 +483,12 @@ This endpoint requires an OAuth access token.
 `DELETE https://plangrade.com/api/v1/companies/{id}`
 
 <aside class="warning">
-Deleting a company will result in deleting all of its information as well. This includes plans, participants, documents, its history and any future distributions. This action cannot be reversed.
+Deleting a company will result in deleting all of its information as well. This includes plans, participants, documents, its history and any distributions. This action cannot be reversed.
 </aside>
 
 # Participants
+
+> In ruby environments, we recommend using the [plangrade-ruby](https://github.com/topherreynoso/plangrade-ruby) gem. See the plangrade-ruby website for setup instructions.
 
 ### Attributes
 
@@ -502,7 +513,7 @@ Deleting a company will result in deleting all of its information as well. This 
 
 ```ruby
 # Create a new participant
-token.post('api/v1/participants')
+participant_id = Plangrade.create_participant(params)
 ```
 
 > If successful, you'll receive either this response or a list of errors:
@@ -524,7 +535,7 @@ The last four of their `ssn` is optional for a dependent, however an `employee_i
 
 ### Optional
 
-You may optionally include a valid `email` address and/or an SMS enabled `phone` number (10 numbers only). This enables plangrade to send the participant electronic authorizations and notices. Additionally, a `street2` may also be included, if necessary.
+You may optionally include a valid `email` address and/or an SMS enabled `phone` number (10 numbers only). This enables plangrade to send the participant electronic authorizations and notices. Additionally, a `street2` may be included, if necessary.
 
 <aside class="notice">
 This endpoint requires an OAuth access token.
@@ -538,28 +549,26 @@ This endpoint requires an OAuth access token.
 
 ```ruby
 # Fetch a participant's information
-token.get('/api/v1/participants/1')
+participant = Plangrade.get_participant(id)
 ```
 
 > If successful, you'll receive this response:
 
 ```ruby
 {
-  "participant" => {
-    "id" => 1
-    "company_id" => 1
-    "employee_id" => 1
-    "first_name" => "Comply"
-    "last_name" => "Ants"
-    "email" => "compliance@plangrade.com"
-    "phone" => "1234567890"
-    "street1" => "1234 Fake St."
-    "street2" => ""
-    "city" => "Orem"
-    "state" => "UT"
-    "zip" => "84606"
-    "dob" => "1984-12-30"
-  }
+  "id" => 1
+  "company_id" => 1
+  "employee_id" => 1
+  "first_name" => "Comply"
+  "last_name" => "Ants"
+  "email" => "compliance@plangrade.com"
+  "phone" => "1234567890"
+  "street1" => "1234 Fake St."
+  "street2" => ""
+  "city" => "Orem"
+  "state" => "UT"
+  "zip" => "84606"
+  "dob" => "1984-12-30"
 }
 ```
 
@@ -577,60 +586,58 @@ This endpoint requires an OAuth access token.
 
 ```ruby
 # Fetch all participants associated with a company
-token.get('/api/v1/companies')
+participants = Plangrade.all_participants(:company_id => 1, params)
 ```
 
 > If successful, you'll receive this response:
 
 ```ruby
 {
-  "participants" => [
-    {
-      "id" => 1
-      "company_id" => 1
-      "employee_id" => 1
-      "first_name" => "Comply"
-      "last_name" => "Ants"
-      "email" => "compliance@plangrade.com"
-      "phone" => "1234567890"
-      "street1" => "1234 Fake St."
-      "street2" => ""
-      "city" => "Orem"
-      "state" => "UT"
-      "zip" => "84606"
-      "dob" => "1984-12-30"
-    },
-    {
-      "id" => 2
-      "company_id" => 1
-      "employee_id" => 1
-      "first_name" => "Fire"
-      "last_name" => "Ants"
-      "email" => "support@plangrade.com"
-      "phone" => "1234567891"
-      "street1" => "1234 Fake St."
-      "street2" => ""
-      "city" => "Orem"
-      "state" => "UT"
-      "zip" => "84606"
-      "dob" => "1986-04-18"
-    },
-    {
-      "id" => 3
-      "company_id" => 1
-      "employee_id" => 1
-      "first_name" => "Red"
-      "last_name" => "Ants"
-      "email" => ""
-      "phone" => "1234567892"
-      "street1" => "1234 Fake St."
-      "street2" => ""
-      "city" => "Orem"
-      "state" => "UT"
-      "zip" => "84606"
-      "dob" => "2006-11-22"
-    }
-  ]
+  {
+    "id" => 1
+    "company_id" => 1
+    "employee_id" => 1
+    "first_name" => "Comply"
+    "last_name" => "Ants"
+    "email" => "compliance@plangrade.com"
+    "phone" => "1234567890"
+    "street1" => "1234 Fake St."
+    "street2" => ""
+    "city" => "Orem"
+    "state" => "UT"
+    "zip" => "84606"
+    "dob" => "1984-12-30"
+  },
+  {
+    "id" => 2
+    "company_id" => 1
+    "employee_id" => 1
+    "first_name" => "Fire"
+    "last_name" => "Ants"
+    "email" => "support@plangrade.com"
+    "phone" => "1234567891"
+    "street1" => "1234 Fake St."
+    "street2" => ""
+    "city" => "Orem"
+    "state" => "UT"
+    "zip" => "84606"
+    "dob" => "1986-04-18"
+  },
+  {
+    "id" => 3
+    "company_id" => 1
+    "employee_id" => 1
+    "first_name" => "Red"
+    "last_name" => "Ants"
+    "email" => ""
+    "phone" => "1234567892"
+    "street1" => "1234 Fake St."
+    "street2" => ""
+    "city" => "Orem"
+    "state" => "UT"
+    "zip" => "84606"
+    "dob" => "2006-11-22"
+  }
 }
 ```
 
@@ -646,38 +653,36 @@ This endpoint requires an OAuth access token.
 
 ### HTTP Request
 
-`GET https://plangrade.com/api/v1/participants?company_id={1}`
+`GET https://plangrade.com/api/v1/participants?company_id={id}`
 
 ## Update Participant Info
 
 ```ruby
 # Update participant information
-token.put('/api/v1/participants/1')
+updated_participant = Plangrade.update_participant(id, params)
 ```
 
-> If successful, you'll receive either this response or a list of errors:
+> If successful, you'll receive either a response like this one or a list of errors:
 
 ```ruby
 {
-  "participant" => {
-    "id" => 1
-    "company_id" => 1
-    "employee_id" => 1
-    "first_name" => "Comp"
-    "last_name" => "Lance"
-    "email" => "compliance@plangrade.com"
-    "phone" => "1234567890"
-    "street1" => "1234 Fake St."
-    "street2" => ""
-    "city" => "Orem"
-    "state" => "UT"
-    "zip" => "84606"
-    "dob" => "1984-12-30"
-  }
+  "id" => 1
+  "company_id" => 1
+  "employee_id" => 1
+  "first_name" => "Comp"
+  "last_name" => "Lance"
+  "email" => "compliance@plangrade.com"
+  "phone" => "1234567890"
+  "street1" => "1234 Fake St."
+  "street2" => ""
+  "city" => "Orem"
+  "state" => "UT"
+  "zip" => "84606"
+  "dob" => "1984-12-30"
 }
 ```
 
-Update a participant's information. You must include an `employee_id` for every participant update request.
+Update a participant's information. You must include an `employee_id` for every participant update request, even if the `employee_id` is not changing.
 
 ### Employees
 
@@ -691,11 +696,39 @@ This endpoint requires an OAuth access token.
 
 `PUT https://plangrade.com/api/v1/participants/{id}`
 
+## Archive Participant
+
+```ruby
+archived_participant_id = Plangrade.archive_participant(id)
+```
+
+> If successful, you'll receive either a response like this one or a list of errors:
+
+```ruby
+{
+  "id" => 1
+}
+```
+
+Non-destructively archive a participant from one of the authorized user's companies.
+
+<aside class="notice">
+This endpoint requires an OAuth access token.
+</aside>
+
+### HTTP Request
+
+`GET https://plangrade.com/api/v1/participants/archive`
+
+<aside class="warning">
+Archiving a participant will remove the participant and any dependents from regular reports and distributions. The participant and their dependents (if applicable) will still be accessible through the archive along with their history of authorizations, distributions, and notices. This action can be reversed.
+</aside>
+
 ## Delete Participant
 
 ```ruby
 # Delete a company's participant
-token.delete('/api/v1/participants/1')
+Plangrade.delete_participant(id)
 ```
 
 > If successful, you'll recieve a "204 No Content" response.
