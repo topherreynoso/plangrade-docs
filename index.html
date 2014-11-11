@@ -50,7 +50,7 @@
       <div class="content">
         <h1 id='introduction'>Introduction</h1><h2 id='welcome'>Welcome</h2>
 <blockquote>
-<p>Feel free to use the tabs above to select the code that suits your needs.</p>
+<p>Use the tabs above to select the code that suits your needs. A <a href="https://github.com/topherreynoso/plangrade-ruby-client">sample client app</a> is available in the ruby environment. It demonstrates the authentication flow and accessing the API endpoints.</p>
 </blockquote>
 
 <p>This is the plangrade API documentation. You can use our API to access plangrade endpoints, allowing clients to retrieve, create, update, and destroy information on companies, plans, participants, compliance documents, and more.</p>
@@ -69,28 +69,18 @@ JSON will be returned in all responses from the API.
 
 <p><strong>Base API Endpoint:</strong> <code class="prettyprint">https://plangrade.com/api/v1</code></p>
 
-<p>References will be made throughout this version to resources omitting any root urls. For instance, this line:</p>
-
-<p><code class="prettyprint">https://plangrade.com/api/v1/participants</code></p>
-
-<p>will be referenced as:</p>
-
-<p><code class="prettyprint">/api/v1/participants</code></p>
-
 <p><aside class="success">
 This entire API is <em>https only</em>.
 </aside></p>
 <h1 id='authentication'>Authentication</h1>
 <blockquote>
-<p>You can provide your Application key and secret when you initialize our libraries.</p>
-</blockquote>
-<pre><code class="highlight ruby">
-<span class="c1"># set API keys</span>
-<span class="n">app_id</span> <span class="o">=</span> <span class="s2">"blahblahblah"</span>
-<span class="n">secret</span> <span class="o">=</span> <span class="s2">"shhhhhh"</span>
+<p>There is a gem available to facilitate authentication in a ruby environment: <a href="https://github.com/topherreynoso/omniauth-plangrade">omniauth-plangrade</a>. Please refer to the gem&rsquo;s documentation for full instructions.</p>
 
-<span class="c1"># set an OAuth access token</span>
-<span class="n">token</span> <span class="o">=</span> <span class="s2">"JRRTolkien"</span>
+<p>Provide your Application key and secret as the following variables when you initialize your app.</p>
+</blockquote>
+<pre><code class="highlight ruby"><span class="c1"># set API keys</span>
+<span class="no">ENV</span><span class="p">[</span><span class="s1">'PLANGRADE_CLIENT_ID'</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"jhsafdiurwe989734kjo3485uihw5io"</span>
+<span class="no">ENV</span><span class="p">[</span><span class="s1">'PLANGRADE_CLIENT_SECRET'</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"uysadsir5wt6837i9kjo3485u46swfd"</span>
 </code></pre>
 
 <p>To interact with the API, you will need API keys. <a href="https://plangrade.com/oauth/applications">Create a consumer application</a> in order to get an Application <code class="prettyprint">key</code> and <code class="prettyprint">secret</code>.</p>
@@ -105,6 +95,23 @@ This entire API is <em>https only</em>.
 Be sure to replace <code class="prettyprint">&lt;T0K3N_H3R3&gt;</code> with an OAuth <code class="prettyprint">access_token</code>.
 </aside> </p>
 <h2 id='oauth2'>OAuth2</h2>
+<blockquote>
+<p>Set up your application to properly support callback routes.</p>
+</blockquote>
+<pre><code class="highlight ruby"><span class="c1"># For omniauth-plangrade users, here's an example</span>
+<span class="c1"># Add this to your config/routes.rb</span>
+<span class="n">get</span>   <span class="s1">'/auth/:provider/callback'</span> <span class="o">=&gt;</span> <span class="s1">'static_pages#redirect'</span>
+
+<span class="c1"># Add this to config/initializers/omniauth.rb</span>
+<span class="no">Rails</span><span class="p">.</span><span class="nf">application</span><span class="p">.</span><span class="nf">config</span><span class="p">.</span><span class="nf">middleware</span><span class="p">.</span><span class="nf">use</span> <span class="no">OmniAuth</span><span class="o">::</span><span class="no">Builder</span> <span class="k">do</span>
+  <span class="n">provider</span> <span class="p">:</span><span class="n">plangrade</span><span class="p">,</span> <span class="no">ENV</span><span class="p">[</span><span class="s1">'PLANGRADE_CLIENT_ID'</span><span class="p">],</span> <span class="no">ENV</span><span class="p">[</span><span class="s1">'PLANGRADE_CLIENT_SECRET'</span><span class="p">]</span>
+<span class="k">end</span>
+</code></pre>
+
+<blockquote>
+<p>Now just make sure that your <a href="https://plangrade.com/oauth/applications">plangrade client application</a> has the proper Redirect uri specified (e.g. https://mysite.com/auth/plangrade/callback)</p>
+</blockquote>
+
 <p>plangrade&rsquo;s API lets you interact with a user&rsquo;s plangrade account and act on their behalf to view, create, update, and destroy things like companies, plans, and participants. To do so, your application first needs to request authorization from users.</p>
 
 <p>plangrade implements the <a href="http://oauth.net/2/">OAuth 2.0 standard</a> to facilitate this authorization. Similar to Facebook and Twitter&rsquo;s authentication flow, the user is first presented with a permission dialog for your application, at which point the user can either approve the permissions requested or reject them. Once the user aproves, an <code class="prettyprint">authorization_code</code> is sent to your application which will then be <a href="#finish-authorization">exchanged</a> for an <code class="prettyprint">access_token</code> and a <code class="prettyprint">refresh_token</code> pair.</p>
@@ -118,12 +125,24 @@ Be sure to replace <code class="prettyprint">&lt;T0K3N_H3R3&gt;</code> with an O
 <p><strong>Refresh tokens</strong> are <em>good forever</em> (or until revoked by the user).</p>
 
 <p>A refresh token can be used to generate a new <code class="prettyprint">access_token</code> and <code class="prettyprint">refresh_token</code> pair. You can <a href="#refresh-authorization">refresh your authorization</a> to regain active access to a user&rsquo;s account but so long as you store the <code class="prettyprint">refresh_token</code> you can maintain authorization indefinitely without requiring the user to re-authorize.</p>
-<h2 id='request-authorization'>Request Authorization</h2><pre><code class="highlight ruby"><span class="n">redirect_uri</span> <span class="o">=</span> <span class="s2">"https://www.myredirect.com/redirect"</span>
+<h2 id='request-authorization'>Request Authorization</h2>
+<blockquote>
+<p>Request authorization with a properly generated link</p>
+</blockquote>
+<pre><code class="highlight ruby"><span class="c1"># For omniauth-plangrade users, this is trivial</span>
+<span class="c1"># Add a link or button to start the authentication</span>
+<span class="n">link_to</span> <span class="s2">"Authorize"</span><span class="p">,</span> <span class="s2">"/auth/plangrade"</span>
+
+<span class="c1"># As an alternative, use OAuth2</span>
+<span class="n">redirect_uri</span> <span class="o">=</span> <span class="s2">"https://www.myredirect.com/redirect"</span>
 <span class="n">client</span> <span class="o">=</span> <span class="no">OAuth2</span><span class="o">::</span><span class="no">Client</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">app_id</span><span class="p">,</span> <span class="n">secret</span><span class="p">,</span> <span class="ss">:site</span> <span class="o">=&gt;</span> <span class="s2">"https://plangrade.com"</span><span class="p">)</span>
-<span class="n">redirect_to</span> <span class="n">client</span><span class="p">.</span><span class="nf">auth_code</span><span class="p">.</span><span class="nf">authorize_url</span><span class="p">(</span><span class="ss">:redirect_uri</span> <span class="o">=&gt;</span> <span class="n">redirect_uri</span><span class="p">)</span>
+<span class="vi">@auth_path</span> <span class="o">=</span> <span class="n">client</span><span class="p">.</span><span class="nf">auth_code</span><span class="p">.</span><span class="nf">authorize_url</span><span class="p">(</span><span class="ss">:redirect_uri</span> <span class="o">=&gt;</span> <span class="n">redirect_uri</span><span class="p">)</span>
+
+<span class="c1"># Then in your corresponding view you can add a link or button</span>
+<span class="n">link_to</span> <span class="s2">"Authorize"</span><span class="p">,</span> <span class="vi">@auth_path</span>
 </code></pre>
 
-<p>To start the Oauth process, construct the initiation URL which the user will visit in order to grant permission to your application. It describes the permissions your application requires (which grants read/write access to companies, plans, and participants), and who the client application is (your application&rsquo;s name).</p>
+<p>To start the OAuth process, construct the initiation URL which the user will visit in order to grant permission to your application. It describes the permissions your application requires (which grants read/write access to companies, plans, and participants), and who the client application is (your application&rsquo;s name).</p>
 <h3 id='url-format'>URL Format</h3>
 <p><code class="prettyprint">https://plangrade.com/api/v1/authenticate?client_id={client-id}&amp;response_type=code&amp;redirect_uri={redirect_uri}</code></p>
 
@@ -151,22 +170,21 @@ Be sure to replace <code class="prettyprint">&lt;T0K3N_H3R3&gt;</code> with an O
 Remember to url-encode all querystring parameters.
 </aside></p>
 <h2 id='finish-authorization'>Finish Authorization</h2>
-<p>Once the user returns to your application via the <code class="prettyprint">redirect_uri</code> you specified, there will be a <code class="prettyprint">code</code> querystring parameter appended to that URL. Exchange the authorization <code class="prettyprint">code</code> for an <code class="prettyprint">access_token</code> and <code class="prettyprint">refresh_token</code> pair.</p>
-<h3 id='http-request'>HTTP Request</h3><pre><code class="highlight ruby"><span class="n">client</span> <span class="o">=</span> <span class="no">OAuth2</span><span class="o">::</span><span class="no">Client</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">app_id</span><span class="p">,</span> <span class="n">secret</span><span class="p">,</span> <span class="ss">:site</span> <span class="o">=&gt;</span> <span class="s2">"https://plangrade.com"</span><span class="p">)</span>
+<blockquote>
+<p>Once authorized, you need to obtain your <code class="prettyprint">access_token</code> and <code class="prettyprint">refresh_token</code> pair.</p>
+</blockquote>
+<pre><code class="highlight ruby"><span class="c1"># For omniauth-plangrade, just interpret the omniauth response</span>
+<span class="n">auth</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="nf">env</span><span class="p">[</span><span class="s2">"omniauth.auth"</span><span class="p">]</span>
+<span class="n">token</span> <span class="o">=</span> <span class="n">auth</span><span class="p">[</span><span class="s2">"credentials"</span><span class="p">][</span><span class="s2">"token"</span><span class="p">]</span>
+<span class="n">refresh_token</span> <span class="o">=</span> <span class="n">auth</span><span class="p">[</span><span class="s2">"credentials"</span><span class="p">][</span><span class="s2">"refresh_token"</span><span class="p">]</span>
+
+<span class="c1"># Alternatively, you can use OAuth2</span>
+<span class="n">client</span> <span class="o">=</span> <span class="no">OAuth2</span><span class="o">::</span><span class="no">Client</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="no">ENV</span><span class="p">[</span><span class="s1">'PLANGRADE_CLIENT_ID'</span><span class="p">,</span> <span class="s1">'PLANGRADE_CLIENT_SECRET'</span><span class="p">,</span> <span class="ss">:site</span> <span class="o">=&gt;</span> <span class="s2">"https://plangrade.com"</span><span class="p">)</span>
 <span class="n">token</span> <span class="o">=</span> <span class="n">client</span><span class="p">.</span><span class="nf">auth_code</span><span class="p">.</span><span class="nf">get_token</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="ss">:code</span><span class="p">],</span> <span class="ss">:redirect_uri</span> <span class="o">=&gt;</span> <span class="n">redirect_uri</span><span class="p">)</span>
 </code></pre>
 
-<blockquote>
-<p>Successful Response:</p>
-</blockquote>
-<pre><code class="highlight ruby"><span class="p">{</span>
-  <span class="s2">"access_token"</span><span class="p">:</span> <span class="s2">"YLAZSreh165CAD2tPhAEzFCYYIrVyFomLWUDMGFBZIw9KtIg4q"</span><span class="p">,</span>
-  <span class="s2">"expires_in"</span><span class="p">:</span> <span class="mi">7200</span><span class="p">,</span>
-  <span class="s2">"refresh_token"</span><span class="p">:</span> <span class="s2">"Pgk+l9okjwTCfsvIvEDPrsomE1er1txeyoaAkTIBAuXza8WvZY"</span><span class="p">,</span>
-  <span class="s2">"token_type"</span><span class="p">:</span> <span class="s2">"bearer"</span>
-<span class="p">}</span>
-</code></pre>
-
+<p>Once the user returns to your application via the <code class="prettyprint">redirect_uri</code> you specified, there will be a <code class="prettyprint">code</code> querystring parameter appended to that URL. Exchange the authorization <code class="prettyprint">code</code> for an <code class="prettyprint">access_token</code> and <code class="prettyprint">refresh_token</code> pair.</p>
+<h3 id='http-request'>HTTP Request</h3>
 <p><code class="prettyprint">POST https://plangrade.com/oauth/v1/token</code></p>
 
 <table><thead>
@@ -220,18 +238,21 @@ Remember to url-encode all querystring parameters.
 <td>Always <code class="prettyprint">bearer</code></td>
 </tr>
 </tbody></table>
-<h2 id='refresh-authorization'>Refresh Authorization</h2><pre><code class="highlight ruby"><span class="n">new_token</span> <span class="o">=</span> <span class="n">token</span><span class="p">.</span><span class="nf">refresh!</span>
-</code></pre>
-
+<h2 id='refresh-authorization'>Refresh Authorization</h2>
 <blockquote>
-<p>Successful Response:</p>
+<p>You can refresh the token in a ruby environment with the second gem available: <a href="https://github.com/topherreynoso/plangrade-ruby">plangrade-ruby</a>. See the plangrade-ruby website for setup instructions.</p>
 </blockquote>
-<pre><code class="highlight ruby"><span class="p">{</span>
-  <span class="s2">"access_token"</span><span class="p">:</span> <span class="s2">"hr1tSJk23tOv9RxR8cQuDpUD/kpUgf0cb9WfKtRoPxTw8ymbVt"</span><span class="p">,</span>
-  <span class="s2">"expires_in"</span><span class="p">:</span> <span class="mi">7200</span><span class="p">,</span>
-  <span class="s2">"refresh_token"</span><span class="p">:</span> <span class="s2">"lqopeyjq5AJln5fpMedElUULz+XBNNw9nAkIinxE0g4aEzxmDc"</span><span class="p">,</span>
-  <span class="s2">"token_type"</span><span class="p">:</span> <span class="s2">"bearer"</span>
-<span class="p">}</span>
+<pre><code class="highlight ruby"><span class="c1"># The example below demonstrates using the plangrade-ruby gem</span>
+<span class="c1"># Create a plangrade oauth client and refresh the token</span>
+<span class="n">client</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="o">::</span><span class="no">OAuth2Client</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="no">ENV</span><span class="p">[</span><span class="s1">'PLANGRADE_CLIENT_ID'</span><span class="p">],</span> <span class="no">ENV</span><span class="p">[</span><span class="s1">'PLANGRADE_CLIENT_SECRET'</span><span class="p">])</span>
+<span class="n">token_pair</span> <span class="o">=</span> <span class="no">JSON</span><span class="p">.</span><span class="nf">parse</span> <span class="n">client</span><span class="p">.</span><span class="nf">refresh!</span><span class="p">(</span><span class="n">saved_refresh_token</span><span class="p">).</span><span class="nf">body</span>
+<span class="n">new_token</span> <span class="o">=</span> <span class="n">token_pair</span><span class="p">[</span><span class="s2">"access_token"</span><span class="p">]</span>
+<span class="n">new_refresh_token</span> <span class="o">=</span> <span class="n">token_pair</span><span class="p">[</span><span class="s2">"refresh_token"</span><span class="p">]</span>
+
+<span class="c1"># Alternatively, if you used the OAuth2 client, call this on your token pair</span>
+<span class="n">new_token_pair</span> <span class="o">=</span> <span class="no">JSON</span><span class="p">.</span><span class="nf">parse</span> <span class="n">token_pair</span><span class="p">.</span><span class="nf">refresh!</span><span class="p">.</span><span class="nf">body</span>
+<span class="n">new_token</span> <span class="o">=</span> <span class="n">token_pair</span><span class="p">[</span><span class="s2">"access_token"</span><span class="p">]</span>
+<span class="n">new_refresh_token</span> <span class="o">=</span> <span class="n">token_pair</span><span class="p">[</span><span class="s2">"refresh_token"</span><span class="p">]</span>
 </code></pre>
 
 <p>Use a valid <code class="prettyprint">refresh_token</code> to generate a new <code class="prettyprint">access_token</code> and <code class="prettyprint">refresh_token</code> pair.</p>
@@ -285,7 +306,11 @@ Remember to url-encode all querystring parameters.
 <td>Always  <code class="prettyprint">bearer</code></td>
 </tr>
 </tbody></table>
-<h1 id='users'>Users</h1><h3 id='attributes'>Attributes</h3>
+<h1 id='users'>Users</h1>
+<blockquote>
+<p>In ruby environments, we recommend using the <a href="https://github.com/topherreynoso/plangrade-ruby">plangrade-ruby</a> gem. See the plangrade-ruby website for setup instructions.</p>
+</blockquote>
+<h3 id='attributes'>Attributes</h3>
 <table><thead>
 <tr>
 <th>Parameter</th>
@@ -317,12 +342,33 @@ Remember to url-encode all querystring parameters.
 <td>User&rsquo;s email address</td>
 </tr>
 </tbody></table>
-<h2 id='create-new-user-account'>Create New User Account</h2><pre><code class="highlight ruby"><span class="c1"># Create a new user account</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="s1">'api/v1/users'</span><span class="p">)</span>
+<h2 id='current-user-information'>Current User Information</h2><pre><code class="highlight ruby"><span class="c1"># Retrieve the user's information</span>
+<span class="vi">@user</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">current_user</span>
 </code></pre>
 
 <blockquote>
-<p>If successful, you&rsquo;ll receive either this response or a list of errors:</p>
+<p>If successful, you&rsquo;ll receive either a response similar to this one or a list of errors:</p>
+</blockquote>
+<pre><code class="highlight ruby"><span class="p">{</span>
+  <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+  <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"Compliance Man"</span>
+  <span class="s2">"email"</span> <span class="o">=&gt;</span> <span class="s2">"compliance@plangrade.com"</span>
+<span class="p">}</span>
+</code></pre>
+
+<p>Retrieve the current authorized user&rsquo;s information.</p>
+
+<p><aside class="notice">
+This endpoint requires an OAuth access token.
+</aside></p>
+<h3 id='http-request'>HTTP Request</h3>
+<p><code class="prettyprint">GET https://plangrade.com/api/v1/me</code></p>
+<h2 id='create-new-user-account'>Create New User Account</h2><pre><code class="highlight ruby"><span class="c1"># Create a new user account with `name` and `email`</span>
+<span class="n">new_user</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">create_user</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+</code></pre>
+
+<blockquote>
+<p>If successful, you&rsquo;ll receive either a response like this one or a list of errors:</p>
 </blockquote>
 <pre><code class="highlight ruby"><span class="p">{</span>
   <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
@@ -336,42 +382,17 @@ This endpoint does not require an OAuth access token.
 </aside></p>
 <h3 id='http-request'>HTTP Request</h3>
 <p><code class="prettyprint">POST https://plangrade.com/api/v1/users</code></p>
-<h2 id='get-user-info'>Get User Info</h2><pre><code class="highlight ruby"><span class="c1"># Fetch account information for the authorized user</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="s1">'/api/v1/users/1'</span><span class="p">)</span>
+<h2 id='update-user-account-info'>Update User Account Info</h2><pre><code class="highlight ruby"><span class="c1"># Update account information (only for the authorized user)</span>
+<span class="n">updated_user</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">update_user</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
 </code></pre>
 
 <blockquote>
-<p>If successful, you&rsquo;ll receive this response:</p>
+<p>If successful, you&rsquo;ll receive either a response similar to this one or a list of errors:</p>
 </blockquote>
 <pre><code class="highlight ruby"><span class="p">{</span>
-  <span class="s2">"user"</span> <span class="o">=&gt;</span> <span class="p">{</span>
-    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"Test User"</span>
-    <span class="s2">"email"</span> <span class="o">=&gt;</span> <span class="s2">"compliance@plangrade.com"</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</code></pre>
-
-<p>Retrieve information about the authorized user.</p>
-
-<p><aside class="notice">
-This endpoint requires an OAuth access token.
-</aside></p>
-<h3 id='http-request'>HTTP Request</h3>
-<p><code class="prettyprint">GET https://plangrade.com/api/v1/users/{id}</code></p>
-<h2 id='update-user-account-info'>Update User Account Info</h2><pre><code class="highlight ruby"><span class="c1"># Update account information for the authorized user</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">put</span><span class="p">(</span><span class="s1">'/api/v1/users/1'</span><span class="p">)</span>
-</code></pre>
-
-<blockquote>
-<p>If successful, you&rsquo;ll receive either this response or a list of errors:</p>
-</blockquote>
-<pre><code class="highlight ruby"><span class="p">{</span>
-  <span class="s2">"user"</span> <span class="o">=&gt;</span> <span class="p">{</span>
-    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"Test User"</span>
-    <span class="s2">"email"</span> <span class="o">=&gt;</span> <span class="s2">"support@plangrade.com"</span>
-  <span class="p">}</span>
+  <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+  <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"Compliance Man"</span>
+  <span class="s2">"email"</span> <span class="o">=&gt;</span> <span class="s2">"compliance@plangrade.com"</span>
 <span class="p">}</span>
 </code></pre>
 
@@ -382,8 +403,8 @@ This endpoint requires an OAuth access token.
 </aside></p>
 <h3 id='http-request'>HTTP Request</h3>
 <p><code class="prettyprint">PUT https://plangrade.com/api/v1/users/{id}</code></p>
-<h2 id='delete-user-account'>Delete User Account</h2><pre><code class="highlight ruby"><span class="c1"># Delete an authorized user's own account</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">delete</span><span class="p">(</span><span class="s1">'/api/v1/users/1'</span><span class="p">)</span>
+<h2 id='delete-user-account'>Delete User Account</h2><pre><code class="highlight ruby"><span class="c1"># Delete a user account (authorized user only)</span>
+<span class="no">Plangrade</span><span class="p">.</span><span class="nf">delete_user</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
 </code></pre>
 
 <blockquote>
@@ -401,7 +422,11 @@ This endpoint requires an OAuth access token.
 <p><aside class="warning">
 Deleting a user will result in deleting all of its associations with any companies as well. While the companies will not be affected, you should ensure that there is at least one other manager still associated with the company or else only plangrade administrators will have access to it. Deleted users cannot be restored.
 </aside></p>
-<h1 id='companies'>Companies</h1><h3 id='attributes'>Attributes</h3>
+<h1 id='companies'>Companies</h1>
+<blockquote>
+<p>In ruby environments, we recommend using the <a href="https://github.com/topherreynoso/plangrade-ruby">plangrade-ruby</a> gem. See the plangrade-ruby website for setup instructions.</p>
+</blockquote>
+<h3 id='attributes'>Attributes</h3>
 <table><thead>
 <tr>
 <th>Parameter</th>
@@ -441,7 +466,7 @@ Deleting a user will result in deleting all of its associations with any compani
 </tr>
 </tbody></table>
 <h2 id='create-new-company'>Create New Company</h2><pre><code class="highlight ruby"><span class="c1"># Create a new company</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="s1">'api/v1/companies'</span><span class="p">)</span>
+<span class="n">company_id</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">create_company</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 </code></pre>
 
 <blockquote>
@@ -460,19 +485,17 @@ This endpoint requires an OAuth access token.
 <h3 id='http-request'>HTTP Request</h3>
 <p><code class="prettyprint">POST https://plangrade.com/api/v1/companies</code></p>
 <h2 id='get-company-info'>Get Company Info</h2><pre><code class="highlight ruby"><span class="c1"># Fetch company information for an authorized user</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="s1">'/api/v1/companies/1'</span><span class="p">)</span>
+<span class="n">company</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">get_company</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
 </code></pre>
 
 <blockquote>
 <p>If successful, you&rsquo;ll receive this response:</p>
 </blockquote>
 <pre><code class="highlight ruby"><span class="p">{</span>
-  <span class="s2">"company"</span> <span class="o">=&gt;</span> <span class="p">{</span>
-    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-    <span class="s2">"ein"</span> <span class="o">=&gt;</span> <span class="s2">"123456789"</span>
-    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"plangrade"</span>
-    <span class="s2">"grade"</span> <span class="o">=&gt;</span> <span class="s2">"A+"</span>
-  <span class="p">}</span>
+  <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+  <span class="s2">"ein"</span> <span class="o">=&gt;</span> <span class="s2">"123456789"</span>
+  <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"plangrade"</span>
+  <span class="s2">"grade"</span> <span class="o">=&gt;</span> <span class="s2">"A+"</span>
 <span class="p">}</span>
 </code></pre>
 
@@ -484,33 +507,31 @@ This endpoint requires an OAuth access token.
 <h3 id='http-request'>HTTP Request</h3>
 <p><code class="prettyprint">GET https://plangrade.com/api/v1/companies/{id}</code></p>
 <h2 id='get-all-companies'>Get All Companies</h2><pre><code class="highlight ruby"><span class="c1"># Fetch all companies associated with the authorized user</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="s1">'/api/v1/companies'</span><span class="p">)</span>
+<span class="n">companies</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">all_companies</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 </code></pre>
 
 <blockquote>
 <p>If successful, you&rsquo;ll receive this response:</p>
 </blockquote>
 <pre><code class="highlight ruby"><span class="p">{</span>
-  <span class="s2">"companies"</span> <span class="o">=&gt;</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-      <span class="s2">"ein"</span> <span class="o">=&gt;</span> <span class="s2">"123456789"</span>
-      <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"plangrade"</span>
-      <span class="s2">"grade"</span> <span class="o">=&gt;</span> <span class="s2">"A+"</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">2</span>
-      <span class="s2">"ein"</span> <span class="o">=&gt;</span> <span class="s2">"123456788"</span>
-      <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"plangrade, LLC"</span>
-      <span class="s2">"grade"</span> <span class="o">=&gt;</span> <span class="s2">"A"</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">3</span>
-      <span class="s2">"ein"</span> <span class="o">=&gt;</span> <span class="s2">"123456787"</span>
-      <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"plangrade, Inc."</span>
-      <span class="s2">"grade"</span> <span class="o">=&gt;</span> <span class="s2">"A+"</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
+  <span class="p">{</span>
+    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+    <span class="s2">"ein"</span> <span class="o">=&gt;</span> <span class="s2">"123456789"</span>
+    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"plangrade"</span>
+    <span class="s2">"grade"</span> <span class="o">=&gt;</span> <span class="s2">"A+"</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">2</span>
+    <span class="s2">"ein"</span> <span class="o">=&gt;</span> <span class="s2">"123456788"</span>
+    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"plangrade, LLC"</span>
+    <span class="s2">"grade"</span> <span class="o">=&gt;</span> <span class="s2">"A"</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">3</span>
+    <span class="s2">"ein"</span> <span class="o">=&gt;</span> <span class="s2">"123456787"</span>
+    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"plangrade, Inc."</span>
+    <span class="s2">"grade"</span> <span class="o">=&gt;</span> <span class="s2">"A+"</span>
+  <span class="p">}</span>
 <span class="p">}</span>
 </code></pre>
 
@@ -522,19 +543,17 @@ This endpoint requires an OAuth access token.
 <h3 id='http-request'>HTTP Request</h3>
 <p><code class="prettyprint">GET https://plangrade.com/api/v1/companies</code></p>
 <h2 id='update-company-info'>Update Company Info</h2><pre><code class="highlight ruby"><span class="c1"># Update company information for an authorized user</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">put</span><span class="p">(</span><span class="s1">'/api/v1/companies/1'</span><span class="p">)</span>
+<span class="n">updated_company</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">update_company</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
 </code></pre>
 
 <blockquote>
 <p>If successful, you&rsquo;ll receive either this response or a list of errors:</p>
 </blockquote>
 <pre><code class="highlight ruby"><span class="p">{</span>
-  <span class="s2">"company"</span> <span class="o">=&gt;</span> <span class="p">{</span>
-    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-    <span class="s2">"ein"</span> <span class="o">=&gt;</span> <span class="s2">"123456789"</span>
-    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"plangrade, LLC"</span>
-    <span class="s2">"grade"</span> <span class="o">=&gt;</span> <span class="s2">"A+"</span>
-  <span class="p">}</span>
+  <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+  <span class="s2">"ein"</span> <span class="o">=&gt;</span> <span class="s2">"123456789"</span>
+  <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"plangrade, LLC"</span>
+  <span class="s2">"grade"</span> <span class="o">=&gt;</span> <span class="s2">"A+"</span>
 <span class="p">}</span>
 </code></pre>
 
@@ -546,7 +565,7 @@ This endpoint requires an OAuth access token.
 <h3 id='http-request'>HTTP Request</h3>
 <p><code class="prettyprint">PUT https://plangrade.com/api/v1/companies/{id}</code></p>
 <h2 id='delete-company'>Delete Company</h2><pre><code class="highlight ruby"><span class="c1"># Delete an authorized user's company</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">delete</span><span class="p">(</span><span class="s1">'/api/v1/companies/1'</span><span class="p">)</span>
+<span class="no">Plangrade</span><span class="p">.</span><span class="nf">delete_company</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
 </code></pre>
 
 <blockquote>
@@ -562,9 +581,13 @@ This endpoint requires an OAuth access token.
 <p><code class="prettyprint">DELETE https://plangrade.com/api/v1/companies/{id}</code></p>
 
 <p><aside class="warning">
-Deleting a company will result in deleting all of its information as well. This includes plans, participants, documents, its history and any future distributions. This action cannot be reversed.
+Deleting a company will result in deleting all of its information as well. This includes plans, participants, documents, its history and any distributions. This action cannot be reversed.
 </aside></p>
-<h1 id='participants'>Participants</h1><h3 id='attributes'>Attributes</h3>
+<h1 id='participants'>Participants</h1>
+<blockquote>
+<p>In ruby environments, we recommend using the <a href="https://github.com/topherreynoso/plangrade-ruby">plangrade-ruby</a> gem. See the plangrade-ruby website for setup instructions.</p>
+</blockquote>
+<h3 id='attributes'>Attributes</h3>
 <table><thead>
 <tr>
 <th>&nbsp;&nbsp;&nbsp;Parameter&nbsp;&nbsp;&nbsp;</th>
@@ -674,7 +697,7 @@ Deleting a company will result in deleting all of its information as well. This 
 </tr>
 </tbody></table>
 <h2 id='create-new-participant'>Create New Participant</h2><pre><code class="highlight ruby"><span class="c1"># Create a new participant</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="s1">'api/v1/participants'</span><span class="p">)</span>
+<span class="n">participant_id</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">create_participant</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 </code></pre>
 
 <blockquote>
@@ -691,7 +714,7 @@ Deleting a company will result in deleting all of its information as well. This 
 <h3 id='dependent-participants'>Dependent Participants</h3>
 <p>The last four of their <code class="prettyprint">ssn</code> is optional for a dependent, however an <code class="prettyprint">employee_id</code> is necessary. As such, employees must have a participant record created before their dependents.</p>
 <h3 id='optional'>Optional</h3>
-<p>You may optionally include a valid <code class="prettyprint">email</code> address and/or an SMS enabled <code class="prettyprint">phone</code> number (10 numbers only). This enables plangrade to send the participant electronic authorizations and notices. Additionally, a <code class="prettyprint">street2</code> may also be included, if necessary.</p>
+<p>You may optionally include a valid <code class="prettyprint">email</code> address and/or an SMS enabled <code class="prettyprint">phone</code> number (10 numbers only). This enables plangrade to send the participant electronic authorizations and notices. Additionally, a <code class="prettyprint">street2</code> may be included, if necessary.</p>
 
 <p><aside class="notice">
 This endpoint requires an OAuth access token.
@@ -699,14 +722,45 @@ This endpoint requires an OAuth access token.
 <h3 id='http-request'>HTTP Request</h3>
 <p><code class="prettyprint">POST https://plangrade.com/api/v1/participants</code></p>
 <h2 id='get-participant-info'>Get Participant Info</h2><pre><code class="highlight ruby"><span class="c1"># Fetch a participant's information</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="s1">'/api/v1/participants/1'</span><span class="p">)</span>
+<span class="n">participant</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">get_participant</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
 </code></pre>
 
 <blockquote>
 <p>If successful, you&rsquo;ll receive this response:</p>
 </blockquote>
 <pre><code class="highlight ruby"><span class="p">{</span>
-  <span class="s2">"participant"</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+  <span class="s2">"company_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+  <span class="s2">"employee_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+  <span class="s2">"first_name"</span> <span class="o">=&gt;</span> <span class="s2">"Comply"</span>
+  <span class="s2">"last_name"</span> <span class="o">=&gt;</span> <span class="s2">"Ants"</span>
+  <span class="s2">"email"</span> <span class="o">=&gt;</span> <span class="s2">"compliance@plangrade.com"</span>
+  <span class="s2">"phone"</span> <span class="o">=&gt;</span> <span class="s2">"1234567890"</span>
+  <span class="s2">"street1"</span> <span class="o">=&gt;</span> <span class="s2">"1234 Fake St."</span>
+  <span class="s2">"street2"</span> <span class="o">=&gt;</span> <span class="s2">""</span>
+  <span class="s2">"city"</span> <span class="o">=&gt;</span> <span class="s2">"Orem"</span>
+  <span class="s2">"state"</span> <span class="o">=&gt;</span> <span class="s2">"UT"</span>
+  <span class="s2">"zip"</span> <span class="o">=&gt;</span> <span class="s2">"84606"</span>
+  <span class="s2">"dob"</span> <span class="o">=&gt;</span> <span class="s2">"1984-12-30"</span>
+<span class="p">}</span>
+</code></pre>
+
+<p>Retrieve information about a participant.</p>
+
+<p><aside class="notice">
+This endpoint requires an OAuth access token.
+</aside></p>
+<h3 id='http-request'>HTTP Request</h3>
+<p><code class="prettyprint">GET https://plangrade.com/api/v1/participants/{id}</code></p>
+<h2 id='get-all-company39s-participants'>Get All Company&rsquo;s Participants</h2><pre><code class="highlight ruby"><span class="c1"># Fetch all participants associated with a company</span>
+<span class="n">participants</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">all_participants</span><span class="p">(</span><span class="ss">:company_id</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+</code></pre>
+
+<blockquote>
+<p>If successful, you&rsquo;ll receive this response:</p>
+</blockquote>
+<pre><code class="highlight ruby"><span class="p">{</span>
+  <span class="p">{</span>
     <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
     <span class="s2">"company_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
     <span class="s2">"employee_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
@@ -720,72 +774,37 @@ This endpoint requires an OAuth access token.
     <span class="s2">"state"</span> <span class="o">=&gt;</span> <span class="s2">"UT"</span>
     <span class="s2">"zip"</span> <span class="o">=&gt;</span> <span class="s2">"84606"</span>
     <span class="s2">"dob"</span> <span class="o">=&gt;</span> <span class="s2">"1984-12-30"</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">2</span>
+    <span class="s2">"company_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+    <span class="s2">"employee_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+    <span class="s2">"first_name"</span> <span class="o">=&gt;</span> <span class="s2">"Fire"</span>
+    <span class="s2">"last_name"</span> <span class="o">=&gt;</span> <span class="s2">"Ants"</span>
+    <span class="s2">"email"</span> <span class="o">=&gt;</span> <span class="s2">"support@plangrade.com"</span>
+    <span class="s2">"phone"</span> <span class="o">=&gt;</span> <span class="s2">"1234567891"</span>
+    <span class="s2">"street1"</span> <span class="o">=&gt;</span> <span class="s2">"1234 Fake St."</span>
+    <span class="s2">"street2"</span> <span class="o">=&gt;</span> <span class="s2">""</span>
+    <span class="s2">"city"</span> <span class="o">=&gt;</span> <span class="s2">"Orem"</span>
+    <span class="s2">"state"</span> <span class="o">=&gt;</span> <span class="s2">"UT"</span>
+    <span class="s2">"zip"</span> <span class="o">=&gt;</span> <span class="s2">"84606"</span>
+    <span class="s2">"dob"</span> <span class="o">=&gt;</span> <span class="s2">"1986-04-18"</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">3</span>
+    <span class="s2">"company_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+    <span class="s2">"employee_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+    <span class="s2">"first_name"</span> <span class="o">=&gt;</span> <span class="s2">"Red"</span>
+    <span class="s2">"last_name"</span> <span class="o">=&gt;</span> <span class="s2">"Ants"</span>
+    <span class="s2">"email"</span> <span class="o">=&gt;</span> <span class="s2">""</span>
+    <span class="s2">"phone"</span> <span class="o">=&gt;</span> <span class="s2">"1234567892"</span>
+    <span class="s2">"street1"</span> <span class="o">=&gt;</span> <span class="s2">"1234 Fake St."</span>
+    <span class="s2">"street2"</span> <span class="o">=&gt;</span> <span class="s2">""</span>
+    <span class="s2">"city"</span> <span class="o">=&gt;</span> <span class="s2">"Orem"</span>
+    <span class="s2">"state"</span> <span class="o">=&gt;</span> <span class="s2">"UT"</span>
+    <span class="s2">"zip"</span> <span class="o">=&gt;</span> <span class="s2">"84606"</span>
+    <span class="s2">"dob"</span> <span class="o">=&gt;</span> <span class="s2">"2006-11-22"</span>
   <span class="p">}</span>
-<span class="p">}</span>
-</code></pre>
-
-<p>Retrieve information about a participant.</p>
-
-<p><aside class="notice">
-This endpoint requires an OAuth access token.
-</aside></p>
-<h3 id='http-request'>HTTP Request</h3>
-<p><code class="prettyprint">GET https://plangrade.com/api/v1/participants/{id}</code></p>
-<h2 id='get-all-company39s-participants'>Get All Company&rsquo;s Participants</h2><pre><code class="highlight ruby"><span class="c1"># Fetch all participants associated with a company</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="s1">'/api/v1/companies'</span><span class="p">)</span>
-</code></pre>
-
-<blockquote>
-<p>If successful, you&rsquo;ll receive this response:</p>
-</blockquote>
-<pre><code class="highlight ruby"><span class="p">{</span>
-  <span class="s2">"participants"</span> <span class="o">=&gt;</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-      <span class="s2">"company_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-      <span class="s2">"employee_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-      <span class="s2">"first_name"</span> <span class="o">=&gt;</span> <span class="s2">"Comply"</span>
-      <span class="s2">"last_name"</span> <span class="o">=&gt;</span> <span class="s2">"Ants"</span>
-      <span class="s2">"email"</span> <span class="o">=&gt;</span> <span class="s2">"compliance@plangrade.com"</span>
-      <span class="s2">"phone"</span> <span class="o">=&gt;</span> <span class="s2">"1234567890"</span>
-      <span class="s2">"street1"</span> <span class="o">=&gt;</span> <span class="s2">"1234 Fake St."</span>
-      <span class="s2">"street2"</span> <span class="o">=&gt;</span> <span class="s2">""</span>
-      <span class="s2">"city"</span> <span class="o">=&gt;</span> <span class="s2">"Orem"</span>
-      <span class="s2">"state"</span> <span class="o">=&gt;</span> <span class="s2">"UT"</span>
-      <span class="s2">"zip"</span> <span class="o">=&gt;</span> <span class="s2">"84606"</span>
-      <span class="s2">"dob"</span> <span class="o">=&gt;</span> <span class="s2">"1984-12-30"</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">2</span>
-      <span class="s2">"company_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-      <span class="s2">"employee_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-      <span class="s2">"first_name"</span> <span class="o">=&gt;</span> <span class="s2">"Fire"</span>
-      <span class="s2">"last_name"</span> <span class="o">=&gt;</span> <span class="s2">"Ants"</span>
-      <span class="s2">"email"</span> <span class="o">=&gt;</span> <span class="s2">"support@plangrade.com"</span>
-      <span class="s2">"phone"</span> <span class="o">=&gt;</span> <span class="s2">"1234567891"</span>
-      <span class="s2">"street1"</span> <span class="o">=&gt;</span> <span class="s2">"1234 Fake St."</span>
-      <span class="s2">"street2"</span> <span class="o">=&gt;</span> <span class="s2">""</span>
-      <span class="s2">"city"</span> <span class="o">=&gt;</span> <span class="s2">"Orem"</span>
-      <span class="s2">"state"</span> <span class="o">=&gt;</span> <span class="s2">"UT"</span>
-      <span class="s2">"zip"</span> <span class="o">=&gt;</span> <span class="s2">"84606"</span>
-      <span class="s2">"dob"</span> <span class="o">=&gt;</span> <span class="s2">"1986-04-18"</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">3</span>
-      <span class="s2">"company_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-      <span class="s2">"employee_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-      <span class="s2">"first_name"</span> <span class="o">=&gt;</span> <span class="s2">"Red"</span>
-      <span class="s2">"last_name"</span> <span class="o">=&gt;</span> <span class="s2">"Ants"</span>
-      <span class="s2">"email"</span> <span class="o">=&gt;</span> <span class="s2">""</span>
-      <span class="s2">"phone"</span> <span class="o">=&gt;</span> <span class="s2">"1234567892"</span>
-      <span class="s2">"street1"</span> <span class="o">=&gt;</span> <span class="s2">"1234 Fake St."</span>
-      <span class="s2">"street2"</span> <span class="o">=&gt;</span> <span class="s2">""</span>
-      <span class="s2">"city"</span> <span class="o">=&gt;</span> <span class="s2">"Orem"</span>
-      <span class="s2">"state"</span> <span class="o">=&gt;</span> <span class="s2">"UT"</span>
-      <span class="s2">"zip"</span> <span class="o">=&gt;</span> <span class="s2">"84606"</span>
-      <span class="s2">"dob"</span> <span class="o">=&gt;</span> <span class="s2">"2006-11-22"</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
 <span class="p">}</span>
 </code></pre>
 
@@ -797,34 +816,32 @@ This endpoint requires an OAuth access token.
 This endpoint requires an OAuth access token.
 </aside></p>
 <h3 id='http-request'>HTTP Request</h3>
-<p><code class="prettyprint">GET https://plangrade.com/api/v1/participants?company_id={1}</code></p>
+<p><code class="prettyprint">GET https://plangrade.com/api/v1/participants?company_id={id}</code></p>
 <h2 id='update-participant-info'>Update Participant Info</h2><pre><code class="highlight ruby"><span class="c1"># Update participant information</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">put</span><span class="p">(</span><span class="s1">'/api/v1/participants/1'</span><span class="p">)</span>
+<span class="n">updated_participant</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">update_participant</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
 </code></pre>
 
 <blockquote>
-<p>If successful, you&rsquo;ll receive either this response or a list of errors:</p>
+<p>If successful, you&rsquo;ll receive either a response like this one or a list of errors:</p>
 </blockquote>
 <pre><code class="highlight ruby"><span class="p">{</span>
-  <span class="s2">"participant"</span> <span class="o">=&gt;</span> <span class="p">{</span>
-    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-    <span class="s2">"company_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-    <span class="s2">"employee_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
-    <span class="s2">"first_name"</span> <span class="o">=&gt;</span> <span class="s2">"Comp"</span>
-    <span class="s2">"last_name"</span> <span class="o">=&gt;</span> <span class="s2">"Lance"</span>
-    <span class="s2">"email"</span> <span class="o">=&gt;</span> <span class="s2">"compliance@plangrade.com"</span>
-    <span class="s2">"phone"</span> <span class="o">=&gt;</span> <span class="s2">"1234567890"</span>
-    <span class="s2">"street1"</span> <span class="o">=&gt;</span> <span class="s2">"1234 Fake St."</span>
-    <span class="s2">"street2"</span> <span class="o">=&gt;</span> <span class="s2">""</span>
-    <span class="s2">"city"</span> <span class="o">=&gt;</span> <span class="s2">"Orem"</span>
-    <span class="s2">"state"</span> <span class="o">=&gt;</span> <span class="s2">"UT"</span>
-    <span class="s2">"zip"</span> <span class="o">=&gt;</span> <span class="s2">"84606"</span>
-    <span class="s2">"dob"</span> <span class="o">=&gt;</span> <span class="s2">"1984-12-30"</span>
-  <span class="p">}</span>
+  <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+  <span class="s2">"company_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+  <span class="s2">"employee_id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+  <span class="s2">"first_name"</span> <span class="o">=&gt;</span> <span class="s2">"Comp"</span>
+  <span class="s2">"last_name"</span> <span class="o">=&gt;</span> <span class="s2">"Lance"</span>
+  <span class="s2">"email"</span> <span class="o">=&gt;</span> <span class="s2">"compliance@plangrade.com"</span>
+  <span class="s2">"phone"</span> <span class="o">=&gt;</span> <span class="s2">"1234567890"</span>
+  <span class="s2">"street1"</span> <span class="o">=&gt;</span> <span class="s2">"1234 Fake St."</span>
+  <span class="s2">"street2"</span> <span class="o">=&gt;</span> <span class="s2">""</span>
+  <span class="s2">"city"</span> <span class="o">=&gt;</span> <span class="s2">"Orem"</span>
+  <span class="s2">"state"</span> <span class="o">=&gt;</span> <span class="s2">"UT"</span>
+  <span class="s2">"zip"</span> <span class="o">=&gt;</span> <span class="s2">"84606"</span>
+  <span class="s2">"dob"</span> <span class="o">=&gt;</span> <span class="s2">"1984-12-30"</span>
 <span class="p">}</span>
 </code></pre>
 
-<p>Update a participant&rsquo;s information. You must include an <code class="prettyprint">employee_id</code> for every participant update request.</p>
+<p>Update a participant&rsquo;s information. You must include an <code class="prettyprint">employee_id</code> for every participant update request, even if the <code class="prettyprint">employee_id</code> is not changing.</p>
 <h3 id='employees'>Employees</h3>
 <p>Remember to make the <code class="prettyprint">employee_id</code> equivalent to the participant&rsquo;s <code class="prettyprint">id</code>.</p>
 
@@ -833,8 +850,30 @@ This endpoint requires an OAuth access token.
 </aside></p>
 <h3 id='http-request'>HTTP Request</h3>
 <p><code class="prettyprint">PUT https://plangrade.com/api/v1/participants/{id}</code></p>
+<h2 id='archive-participant'>Archive Participant</h2><pre><code class="highlight ruby"><span class="n">archived_participant_id</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">archive_participant</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+</code></pre>
+
+<blockquote>
+<p>If successful, you&rsquo;ll receive either a response like this one or a list of errors:</p>
+</blockquote>
+<pre><code class="highlight ruby"><span class="p">{</span>
+  <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+<span class="p">}</span>
+</code></pre>
+
+<p>Non-destructively archive a participant from one of the authorized user&rsquo;s companies.</p>
+
+<p><aside class="notice">
+This endpoint requires an OAuth access token.
+</aside></p>
+<h3 id='http-request'>HTTP Request</h3>
+<p><code class="prettyprint">GET https://plangrade.com/api/v1/participants/archive</code></p>
+
+<p><aside class="warning">
+Archiving a participant will remove the participant and any dependents from regular reports and distributions. The participant and their dependents (if applicable) will still be accessible through the archive along with their history of authorizations, distributions, and notices. This action can be reversed.
+</aside></p>
 <h2 id='delete-participant'>Delete Participant</h2><pre><code class="highlight ruby"><span class="c1"># Delete a company's participant</span>
-<span class="n">token</span><span class="p">.</span><span class="nf">delete</span><span class="p">(</span><span class="s1">'/api/v1/participants/1'</span><span class="p">)</span>
+<span class="no">Plangrade</span><span class="p">.</span><span class="nf">delete_participant</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
 </code></pre>
 
 <blockquote>
