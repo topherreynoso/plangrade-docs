@@ -746,3 +746,121 @@ This endpoint requires an OAuth access token.
 <aside class="warning">
 Deleting a participant will result in deleting all of their information as well as any associated dependents. Make sure that you actually want to delete and not just archive the participant. This includes deleting any distributions, history, and documents specific to this participant and all of the same information associated with any dependents. This action cannot be reversed.
 </aside>
+
+# Activities
+
+> In ruby environments, we recommend using the [plangrade-ruby](https://github.com/topherreynoso/plangrade-ruby) gem. See the plangrade-ruby website for setup instructions.
+
+### Attributes
+
+&nbsp;&nbsp;&nbsp;Parameter&nbsp;&nbsp;&nbsp; | Type | Optional? | Read Only? | Description
+--------------- | ---- | --------- | ---------- | -----------
+`id` | Integer| No | Yes | Activity's plangrade ID
+`name` | String | No | Yes | Name of the activity
+`start_time` | DateTime | No | Yes | Date and time that the activity is scheduled to occur
+
+## Get All Company's Activities
+
+```ruby
+# Fetch all activities associated with a company
+activities = Plangrade.all_activities(:company_id => 1, params)
+```
+
+> If successful, you'll receive this response:
+
+```ruby
+{
+  {
+    "id" => 1
+    "name" => "Distribute Summary Plan Description"
+    "start_time" => "1984-12-30"
+  },
+  {
+    "id" => 2
+    "name" => "Distribute Open Enrollment"
+    "start_time" => "1986-04-18"
+  },
+  {
+    "id" => 3
+    "name" => "Distribute Creditable Coverage"
+    "start_time" => "2006-11-22"
+  }
+}
+```
+
+Retrieve information about all of the activities in an authorized user's company.
+
+### Mandatory
+
+You must include a `company_id` parameter in order to allow plangrade to identify which company you want to query and to verify that the authorized user has access to this company.
+
+<aside class="notice">
+This endpoint requires an OAuth access token.
+</aside>
+
+### HTTP Request
+
+`GET https://plangrade.com/api/v1/activities?company_id={id}`
+
+# Notices
+
+> In ruby environments, we recommend using the [plangrade-ruby](https://github.com/topherreynoso/plangrade-ruby) gem. See the plangrade-ruby website for setup instructions.
+
+### Attributes
+
+&nbsp;&nbsp;&nbsp;Parameter&nbsp;&nbsp;&nbsp; | Type | Optional? | Read Only? | Description
+--------------- | ---- | --------- | ---------- | -----------
+`id` | Integer| No | Yes | Notice's plangrade ID
+`name` | String | No | Yes | Name of the notice
+`plan_name` | String | No | Yes | Name of the plan associated with this notice
+`link` | String | No | Yes | URL for the PDF associated with this notice
+`created_at` | DateTime | No | Yes | Date and time that the notice's latest version was created
+
+## Get All Company's Notices
+
+```ruby
+# Fetch all notices associated with a company
+notices = Plangrade.all_notices(:company_id => 1, params)
+```
+
+> If successful, you'll receive this response:
+
+```ruby
+{
+  {
+    "id" => 1
+    "name" => "Summary Plan Description"
+    "plan_name" => "ABC Corp Health and Welfare Benefits Plan"
+    "link" => "https://plangrade.com/iterations/1234.pdf"
+    "created_at" => "1984-12-30"
+  },
+  {
+    "id" => 2
+    "name" => "Plan Documents"
+    "plan_name" => "ABC Corp Health and Welfare Benefits Plan"
+    "link" => "https://plangrade.com/iterations/2345.pdf"
+    "created_at" => "1984-12-30"
+  },
+  {
+    "id" => 3
+    "name" => "Hiring Notice"
+    "plan_name" => "ABC Corp Health and Welfare Benefits Plan"
+    "link" => "https://plangrade.com/iterations/3456.pdf"
+    "created_at" => "1984-12-30"
+  }
+}
+```
+
+Retrieve information about all of the notices in an authorized user's company.
+
+### Mandatory
+
+You must include a `company_id` parameter in order to allow plangrade to identify which company you want to query and to verify that the authorized user has access to this company.
+
+<aside class="notice">
+This endpoint requires an OAuth access token.
+</aside>
+
+### HTTP Request
+
+`GET https://plangrade.com/api/v1/notices?company_id={id}`
