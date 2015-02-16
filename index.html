@@ -891,6 +891,168 @@ This endpoint requires an OAuth access token.
 <p><aside class="warning">
 Deleting a participant will result in deleting all of their information as well as any associated dependents. Make sure that you actually want to delete and not just archive the participant. This includes deleting any distributions, history, and documents specific to this participant and all of the same information associated with any dependents. This action cannot be reversed.
 </aside></p>
+<h1 id='activities'>Activities</h1>
+<blockquote>
+<p>In ruby environments, we recommend using the <a href="https://github.com/topherreynoso/plangrade-ruby">plangrade-ruby</a> gem. See the plangrade-ruby website for setup instructions.</p>
+</blockquote>
+<h3 id='attributes'>Attributes</h3>
+<table><thead>
+<tr>
+<th>&nbsp;&nbsp;&nbsp;Parameter&nbsp;&nbsp;&nbsp;</th>
+<th>Type</th>
+<th>Optional?</th>
+<th>Read Only?</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td><code class="prettyprint">id</code></td>
+<td>Integer</td>
+<td>No</td>
+<td>Yes</td>
+<td>Activity&rsquo;s plangrade ID</td>
+</tr>
+<tr>
+<td><code class="prettyprint">name</code></td>
+<td>String</td>
+<td>No</td>
+<td>Yes</td>
+<td>Name of the activity</td>
+</tr>
+<tr>
+<td><code class="prettyprint">start_time</code></td>
+<td>DateTime</td>
+<td>No</td>
+<td>Yes</td>
+<td>Date and time that the activity is scheduled to occur</td>
+</tr>
+</tbody></table>
+<h2 id='get-all-company39s-activities'>Get All Company&rsquo;s Activities</h2><pre><code class="highlight ruby"><span class="c1"># Fetch all activities associated with a company</span>
+<span class="n">activities</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">all_activities</span><span class="p">(</span><span class="ss">:company_id</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+</code></pre>
+
+<blockquote>
+<p>If successful, you&rsquo;ll receive this response:</p>
+</blockquote>
+<pre><code class="highlight ruby"><span class="p">{</span>
+  <span class="p">{</span>
+    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"Distribute Summary Plan Description"</span>
+    <span class="s2">"start_time"</span> <span class="o">=&gt;</span> <span class="s2">"1984-12-30"</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">2</span>
+    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"Distribute Open Enrollment"</span>
+    <span class="s2">"start_time"</span> <span class="o">=&gt;</span> <span class="s2">"1986-04-18"</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">3</span>
+    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"Distribute Creditable Coverage"</span>
+    <span class="s2">"start_time"</span> <span class="o">=&gt;</span> <span class="s2">"2006-11-22"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+
+<p>Retrieve information about all of the activities in an authorized user&rsquo;s company.</p>
+<h3 id='mandatory'>Mandatory</h3>
+<p>You must include a <code class="prettyprint">company_id</code> parameter in order to allow plangrade to identify which company you want to query and to verify that the authorized user has access to this company.</p>
+
+<p><aside class="notice">
+This endpoint requires an OAuth access token.
+</aside></p>
+<h3 id='http-request'>HTTP Request</h3>
+<p><code class="prettyprint">GET https://plangrade.com/api/v1/activities?company_id={id}</code></p>
+<h1 id='notices'>Notices</h1>
+<blockquote>
+<p>In ruby environments, we recommend using the <a href="https://github.com/topherreynoso/plangrade-ruby">plangrade-ruby</a> gem. See the plangrade-ruby website for setup instructions.</p>
+</blockquote>
+<h3 id='attributes'>Attributes</h3>
+<table><thead>
+<tr>
+<th>&nbsp;&nbsp;&nbsp;Parameter&nbsp;&nbsp;&nbsp;</th>
+<th>Type</th>
+<th>Optional?</th>
+<th>Read Only?</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td><code class="prettyprint">id</code></td>
+<td>Integer</td>
+<td>No</td>
+<td>Yes</td>
+<td>Notice&rsquo;s plangrade ID</td>
+</tr>
+<tr>
+<td><code class="prettyprint">name</code></td>
+<td>String</td>
+<td>No</td>
+<td>Yes</td>
+<td>Name of the notice</td>
+</tr>
+<tr>
+<td><code class="prettyprint">plan_name</code></td>
+<td>String</td>
+<td>No</td>
+<td>Yes</td>
+<td>Name of the plan associated with this notice</td>
+</tr>
+<tr>
+<td><code class="prettyprint">link</code></td>
+<td>String</td>
+<td>No</td>
+<td>Yes</td>
+<td>URL for the PDF associated with this notice</td>
+</tr>
+<tr>
+<td><code class="prettyprint">created_at</code></td>
+<td>DateTime</td>
+<td>No</td>
+<td>Yes</td>
+<td>Date and time that the notice&rsquo;s latest version was created</td>
+</tr>
+</tbody></table>
+<h2 id='get-all-company39s-notices'>Get All Company&rsquo;s Notices</h2><pre><code class="highlight ruby"><span class="c1"># Fetch all notices associated with a company</span>
+<span class="n">notices</span> <span class="o">=</span> <span class="no">Plangrade</span><span class="p">.</span><span class="nf">all_notices</span><span class="p">(</span><span class="ss">:company_id</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+</code></pre>
+
+<blockquote>
+<p>If successful, you&rsquo;ll receive this response:</p>
+</blockquote>
+<pre><code class="highlight ruby"><span class="p">{</span>
+  <span class="p">{</span>
+    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"Summary Plan Description"</span>
+    <span class="s2">"plan_name"</span> <span class="o">=&gt;</span> <span class="s2">"ABC Corp Health and Welfare Benefits Plan"</span>
+    <span class="s2">"link"</span> <span class="o">=&gt;</span> <span class="s2">"https://plangrade.com/iterations/1234.pdf"</span>
+    <span class="s2">"created_at"</span> <span class="o">=&gt;</span> <span class="s2">"1984-12-30"</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">2</span>
+    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"Plan Documents"</span>
+    <span class="s2">"plan_name"</span> <span class="o">=&gt;</span> <span class="s2">"ABC Corp Health and Welfare Benefits Plan"</span>
+    <span class="s2">"link"</span> <span class="o">=&gt;</span> <span class="s2">"https://plangrade.com/iterations/2345.pdf"</span>
+    <span class="s2">"created_at"</span> <span class="o">=&gt;</span> <span class="s2">"1984-12-30"</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"id"</span> <span class="o">=&gt;</span> <span class="mi">3</span>
+    <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"Hiring Notice"</span>
+    <span class="s2">"plan_name"</span> <span class="o">=&gt;</span> <span class="s2">"ABC Corp Health and Welfare Benefits Plan"</span>
+    <span class="s2">"link"</span> <span class="o">=&gt;</span> <span class="s2">"https://plangrade.com/iterations/3456.pdf"</span>
+    <span class="s2">"created_at"</span> <span class="o">=&gt;</span> <span class="s2">"1984-12-30"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+
+<p>Retrieve information about all of the notices in an authorized user&rsquo;s company.</p>
+<h3 id='mandatory'>Mandatory</h3>
+<p>You must include a <code class="prettyprint">company_id</code> parameter in order to allow plangrade to identify which company you want to query and to verify that the authorized user has access to this company.</p>
+
+<p><aside class="notice">
+This endpoint requires an OAuth access token.
+</aside></p>
+<h3 id='http-request'>HTTP Request</h3>
+<p><code class="prettyprint">GET https://plangrade.com/api/v1/notices?company_id={id}</code></p>
 
           <h1 id='errors'>Errors</h1>
 <p>The plangrade API uses the following error codes:</p>
